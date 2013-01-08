@@ -1,5 +1,8 @@
 # VisuFlow
 
+In functional programming, we decouple the data from the functionality.  
+But why don't we decouple the data flow from the functions?  
+...
 A Clojure library designed to help you organize the order of your functions.
 
 ## Usage
@@ -97,13 +100,13 @@ First, on the left side you can have anything that's a function and takes one ar
 or :else.
 
 On the right side you have more options:
-1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.
+1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.  
 
 2. A keyword: Tells the walker: Drop one and continue at the list at the map value of the keyword.
-If no map is found, the walker will look if the first element of the vector is equal to the keyword.
+If no map is found, the walker will look if the first element of the vector is equal to the keyword.  
 
 3. Chaining: You can chain numbers and keywords together in a sequence.
-e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].
+e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].  
 
 ### More control - the :! colonbangs (unimplemented)
 ```clojure
@@ -117,7 +120,7 @@ e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that n
 ## TODO List
 * Do something useful when the element is neiter a keyword, function, nor a list.
 * Implement the :! keyword functionality (:!f :!p and :!fp work)
-* <Something I forgot belongs here>
+* -Something I forgot belongs here-
 
 ## License
 
