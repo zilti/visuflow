@@ -115,7 +115,8 @@ e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that n
 :!p ;; *P*op instead of peek the values on the stack
 :!f ;; *F*ork the way
 :!fp ;; *F*ork the way, *p*op the stack
-:!_n ;; Clean the stack and only keep the last n values
+:!_#n ;; Clean the stack and only keep the last n values
+:!d#n ;; *D*rop n: This overrules the normal (drop 1) after every command
 :!q ;; *Q*uit the flow and return the last result (NOT RECOMMENDED!)
 ```
 
