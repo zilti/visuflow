@@ -73,6 +73,7 @@ This is done using fork statements:
 [:!f #(inc %) :data]
 ```
 The fork statement consists of three elements.
+
 1. The keyword to distinguish it: :!f means "fork", and :!fp means fork, but pop the values taken for the function from the stack.
 
 2. The validator: A function which gets applied just as the others in the data flow.
@@ -100,6 +101,7 @@ First, on the left side you can have anything that's a function and takes one ar
 or :else.
 
 On the right side you have more options:
+
 1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.  
 
 2. A keyword: Tells the walker: Drop one and continue at the list at the map value of the keyword.
