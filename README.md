@@ -14,6 +14,12 @@ Validargs are keywords referring to a "testing scheme". More on that later.
 
 Finally, you need a nested structure describing what you want to do.
 
+To start, do:
+```clojure
+(use 'visuflow.core)
+(walk {:state 5 :tree '(... walking tree ...) :validargs {... validarg map ...})
+```
+
 ### The nested structure
 The nested structure describes how your data flows through your functions:
 Lists hold everything together:
@@ -65,7 +71,9 @@ This is done using fork statements:
 ```
 The fork statement consists of three elements.
 1. The keyword to distinguish it: :!f means "fork", and :!fp means fork, but pop the values taken for the function from the stack.
+
 2. The validator: A function which gets applied just as the others in the data flow.
+
 3. A "validarg": A keyword telling VisuFlow how to interpret the result of the validator.
 
 #### Validargs
@@ -81,8 +89,8 @@ Furthermore you can define your own in the validargs-map you have to supply at t
 ```clojure
 {:type [[map? 1]
         [list? 2]
-	[vector? 3]
-	[:else 4]]}
+	    [vector? 3]
+	    [:else 4]]}
 ```
 It looks like a sub-flow. Each vector specifies an if-then statement.
 First, on the left side you can have anything that's a function and takes one argument,
@@ -90,8 +98,10 @@ or :else.
 
 On the right side you have more options:
 1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.
+
 2. A keyword: Tells the walker: Drop one and continue at the list at the map value of the keyword.
 If no map is found, the walker will look if the first element of the vector is equal to the keyword.
+
 3. Chaining: You can chain numbers and keywords together in a sequence.
 e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].
 
@@ -103,6 +113,11 @@ e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that n
 :!_n ;; Clean the stack and only keep the last n values
 :!q ;; *Q*uit the flow and return the last result (NOT RECOMMENDED!)
 ```
+
+## TODO List
+* Do something useful when the element is neiter a keyword, function, nor a list.
+* Implement the :! keyword functionality (:!f :!p and :!fp work)
+* <Something I forgot belongs here>
 
 ## License
 
