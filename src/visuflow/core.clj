@@ -1,63 +1,10 @@
-(ns visiflow.core)
+(ns visuflow.core)
 
-(defmacro cond-let
-  "Takes a binding-form and a set of test/expr pairs. Evaluates each test
-  one at a time. If a test returns logical true, cond-let evaluates and
-  returns expr with binding-form bound to the value of test and doesn't
-  evaluate any of the other tests or exprs. To provide a default value
-  either provide a literal that evaluates to logical true and is
-  binding-compatible with binding-form, or use :else as the test and don't
-  refer to any parts of binding-form in the expr. (cond-let binding-form)
-  returns nil."
-  [bindings & clauses]
-  (let [binding (first bindings)]
-    (when-let [[test expr & more] clauses]
-      (if (= test :else)
-        expr
-        `(if-let [~binding ~test]
-           ~expr
-           (cond-let ~bindings ~@more))))))
-
-(defn arg-count [f]
-  (let [m (first (.getDeclaredMethods (class f)))
+(defn- arg-count [f]
+  (let [f (if (fn? f) f @(resolve f))
+        m (first (.getDeclaredMethods (class f)))
         p (.getParameterTypes m)]
     (alength p)))
-
-;; Input: any clojure data structure or thing
-;; It is built of clojure lists or vectors.
-
-;; Fundamental rule: A thing accepting one argument gets the last result,
-;; a thing accepting two arguments gets the two last ones, and so on, on a FIFO base.
-;; You can add the metadata-key :maxargs to define the max number of args for a vararg fun,
-;; or write it like [function maxargs].
-
-;; First entry in a vector:
-;; If it's a keyword, flow will apply it to the input.
-;; Then: When the input is a function it gets applyed, with the whole data structure as argument.
-;; After that, or if it's a data structure, it gets handed to the next thing in the list.
-
-;; If that's a function or keyword, it gets applyed.
-
-;; Takes input map valargs:
-;; Number says how many to drop. 1 means, drop validator expression, take next.
-{:st {:is [[map? 1]
-           [list? 2]
-           [:else 2]]}}
-
-;; Validarg types
-{:data "if input is a value other than true, false, nil"
- :true "if input is true"
- :false "if input is false"
- :nil "if input is nil"
- :fnil "if input is false or nil"
- :is "A vector query like above with custom checkers."}
-
-;; Possible return values
-{1 "or any other number. How many entries to drop. 0 means evaluate the same expression again."
- :foo "Continue at that key in the map after dropping 1."
- :?foo "Continue at the vector where this is the first entry."
- :?_ "Recommendation for default keyword in a vector."
- [3 :foo] "Chaining. Numbers mean: drop. Keywords mean: :foo Key of a map :?foo \"key of a coll\""}
 
 (defn- v-data
   [arg]
@@ -115,6 +62,35 @@
       (v-is inp is-varg)
       (throw (Exception. (str "Validarg does not exist: " varg " in " validargs))))))
 
+(defn- contains-cb? "Checks if the given statement contains a cb (except :!f, :!p and :!fp)"
+  [coll]
+  (let [cb (if (sequential? coll) (name (first coll)) (name coll))]
+    (if (and (.startsWith cb "!")
+           (not= cb "!f") (not= cb "!p") (not= cb "!fp"))
+      true false)))
+
+(defn- parse-cb-stmt "Parses and applies one cb. Returns [coll stack]."
+  [{:keys [coll cb stack]}]
+  (let [cb (if (nil? cb) (first coll) cb)
+        [com arg] (string/split (name cb) #"#")
+        arg (when-not (nil? arg) (. Integer (parseInt arg)))]
+    (case com
+      "!_" [coll (take arg stack)]
+      "!d" [(drop arg coll) stack]
+      "!q" [nil (first stack)])))
+
+(defn- parse-cb-res "Coordinating parsing of a list of validarg statements. Returns [coll stack]."
+  [{:keys [coll cbs stack]}]
+  (if-not (sequential? cbs)
+    (parse-cb-stmt {:coll coll :cb cbs :stack stack})
+    (let [car (first cbs) cdr (rest cbs)]
+      (if (or (empty? cdr) (nil? cdr))
+        (if (nil? car)
+          [coll stack]
+          (parse-cb-stmt {:coll coll :cb car :stack stack}))
+        (let [[coll stack] (parse-cb-stmt {:coll coll :cb car :stack stack})]
+          (parse-cb-res {:coll coll :cbs cdr :stack stack}))))))
+
 (defn- eval-with-stack "Evaluates a function using values from the stack."
   [{:keys [pop? car args stack]}]
   (let [arity (if (nil? args)
@@ -140,15 +116,18 @@
    :else
    coll))
 
-(defn- parse-validarg-res "Coordinates parsing of a list of validarg statements."
-  [coll [car & cdr]]
-  (if (or (empty? cdr) (nil? cdr))
-    (if (nil? car)
-      coll
-      (parse-validarg-stmt coll car))
-    (parse-validarg-res (parse-validarg-stmt coll car) cdr)))
+(defn- parse-validarg-res "Coordinates parsing of a list of validarg statements. Returns an actualized coll."
+  [coll vargs]
+  (if-not (sequential? vargs)
+    (parse-validarg-stmt coll vargs)
+    (let [car (first vargs) cdr (rest vargs)]
+      (if (or (empty? cdr) (nil? cdr))
+        (if (nil? car)
+          coll
+          (parse-validarg-stmt coll car))
+        (parse-validarg-res (parse-validarg-stmt coll car) cdr)))))
 
-(defn- eval-fork "Evaluates a fork expression"
+(defn- eval-fork "Evaluates a fork expression. Returns [coll stack]."
   [{:keys [coll vargs stack]}]
   (let [fork (first coll)
         funstruct (eval (second fork))
@@ -158,44 +137,52 @@
         stack (eval-with-stack {:pop? (= :!fp (first fork)) :car fun :args funargs :stack stack})
         result (first stack)
         vargres (apply-validarg {:inp result :varg validarg :validargs vargs})]
-    [(parse-validarg-res vargres) (conj stack result)]))
+    [(parse-validarg-res coll vargres) (conj stack result)]))
 
-(defn- eval-elem "Evaluates the first element of the coll."
+(defn- eval-elem "Evaluates the first element of the coll. Returns [coll stack]."
   [{:keys [coll vargs stack]}]
   (let [car (first coll)
+        car (if-not (symbol? car) car @(resolve car))
         arg (first stack)]
     (cond
-     (and (keyword? car) (.startsWith (name car) ":!"))
-     [coll stack]
+     (or (and (sequential? car) (contains-cb? car))
+        (and (keyword? car) (contains-cb? car)))
+     (parse-cb-res {:coll coll :cbs car :stack stack})
      
      (or (keyword? car) (fn? car))
-     [(drop 1 coll) (eval-with-stack :car car :stack stack)]
+     [(drop 1 coll) (eval-with-stack {:car car :stack stack})]
      
      (sequential? car)
      (if (or (= :!f (first car)) (= :!fp (first car)))
-       (eval-fork :coll coll :vargs vargs :stack stack)
+       (eval-fork {:coll coll :vargs vargs :stack stack})
        
        (let [pop? (= :!p (first car))
              cdr (if pop? (rest car) car)
              fun (first cdr)
-             args (rest cdr)]
-        [(drop 1 coll) (eval-with-stack :pop? pop? :car fun :args args :stack stack)]))
+             args (rest cdr)
+             result (eval-with-stack {:pop? pop? :car fun :args args :stack stack})]
+         (if-not (and (sequential? result) (contains-cb? (first result)))
+           [(drop 1 coll) result]
+           (parse-cb-res {:coll coll
+                          :cbs (first result)
+                          :stack (if (> 1 (count (rest result)))
+                                   (conj stack (rest result))
+                                   (conj stack (second result)))}))))
      
-     :else ;; TODO broken
+     :else ;; TODO broken?
      [(drop 1 coll) (conj stack (arg car))])))
 
 (defn walk "Walks its way through the list tree."
-  ([{:keys [state tree validargs]}]
-     (walk true :tree tree :validargs validargs :stack (conj (list) state)))
-  
   ([x {:keys [tree validargs stack]}]
-     (cond
-      (list? (first tree))
-      (walk true :tree (first tree) :validargs validargs :stack stack)
-      
-      (empty? (rest tree))
-      (eval-elem :coll tree :vargs validargs :stack stack)
-      
-      :else
-      (let [[tree stack] (eval-elem :coll tree :vargs validargs :stack stack)]
-        (walk true :tree tree :validargs validargs :stack stack)))))
+     (let [stack (if (list? stack) stack (list stack))]
+      (cond
+       (list? (first tree))
+       (walk true {:tree (first tree) :validargs validargs :stack stack})
+       
+       (empty? (rest tree))
+       (-> (eval-elem {:coll tree :vargs validargs :stack stack}) second first)
+       
+       :else
+       (let [[tree stack] (eval-elem {:coll tree :vargs validargs :stack stack})]
+         (walk true {:tree tree :validargs validargs :stack stack}))
+       ))))

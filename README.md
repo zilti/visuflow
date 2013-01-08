@@ -4,8 +4,11 @@ In functional programming, we decouple the data from the functionality.
 But why don't we decouple the data flow from the functions?  
 ...
 A Clojure library designed to help you organize the order of your functions.
-
 ## Usage
+
+```clojure
+[visuflow "0.1.0"]
+```
 
 ### Ingredients - a small overview...
 For this to work, you need functions you want to link together.
@@ -80,6 +83,18 @@ The fork statement consists of three elements.
 
 3. A "validarg": A keyword telling VisuFlow how to interpret the result of the validator.
 
+#### Something to consider...
+The reader "steps" into nested lists, never to leave them again:
+```clojure
+(walk {:state 1 :tree '(inc inc dec [:!f identity :<5] inc dec) :validargs {:<5 [[#(< % 5) 1]
+                                                                                 [#(>= % 5) 2]]}}) 
+;;=> 2 ;; Stack: (2 3 2 2 3 2 1)
+
+(walk {:state 1 :tree '(inc inc dec [:!f identity :<5] (inc) (dec)) :validargs {:<5 [[#(< % 5) 1]
+                                                                                     [#(>= % 5) 2]]}})
+;;=> 3 ;; Stack: (3 2 2 3 2 1)
+```
+
 #### Validargs
 There are some built-in validargs:
 :data "if input is a value other than true, false, nil"
@@ -105,24 +120,23 @@ On the right side you have more options:
 1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.  
 
 2. A keyword: Tells the walker: Drop one and continue at the list at the map value of the keyword.
-If no map is found, the walker will look if the first element of the list is equal to the keyword.  
+If no map is found, the walker will look if the first element of the list is equal to the keyword.
+Don't forget: This is the only place where you can use maps! A map without fork will crash.  
 
 3. Chaining: You can chain numbers and keywords together in a sequence.
 e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].  
 
-### More control - the :! colonbangs (unimplemented)
+### More control - the flow :! colonbangs
 ```clojure
-:!p ;; *P*op instead of peek the values on the stack
-:!f ;; *F*ork the way
-:!fp ;; *F*ork the way, *p*op the stack
-:!_#n ;; Clean the stack and only keep the last n values
+:!_#n ;; Clean the stack and only keep the last n values.
 :!d#n ;; *D*rop n: This overrules the normal (drop 1) after every command
 :!q ;; *Q*uit the flow and return the last result (NOT RECOMMENDED!)
 ```
+You can either write them into the control flow, or let a function return it as the first value of a tuple(but that won't work in a fork!). Furthermore you can compose them as you can with validargs.
+Note: When using the flow-:!-statements, nothing will get dropped from the tree, you have to do that yourself! e.g. [:!_#2 :!d#1] To keep last 2 stack entries and drop one entry from the tree.
 
 ## TODO List
 * Do something useful when the element is neiter a keyword, function, nor a list.
-* Implement the :! keyword functionality (:!f :!p and :!fp work)
 * Check first element of list instead of only the map
 * -Something I forgot belongs here-
 
