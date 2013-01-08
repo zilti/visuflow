@@ -105,7 +105,7 @@ On the right side you have more options:
 1. Numbers: Tells the walker how much to drop from the list it's walking on. The walker can only ever work on the first element of the list. 0 means: Run the fork again.  
 
 2. A keyword: Tells the walker: Drop one and continue at the list at the map value of the keyword.
-If no map is found, the walker will look if the first element of the vector is equal to the keyword.  
+If no map is found, the walker will look if the first element of the list is equal to the keyword.  
 
 3. Chaining: You can chain numbers and keywords together in a sequence.
 e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].  
@@ -123,6 +123,7 @@ e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that n
 ## TODO List
 * Do something useful when the element is neiter a keyword, function, nor a list.
 * Implement the :! keyword functionality (:!f :!p and :!fp work)
+* Check first element of list instead of only the map
 * -Something I forgot belongs here-
 
 ## License

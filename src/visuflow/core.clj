@@ -95,15 +95,15 @@
           nil
           validarg-list))
 
-(defn- popstack
+(defn- popstack "Gets values from the stack by pop."
   [{:keys [stack count]}]
   [(take count stack) (drop count stack)])
 
-(defn- getstack
+(defn- getstack "Gets values from the stack by peek."
   [{:keys [stack count]}]
   [(take count stack) stack])
 
-(defn- apply-validarg
+(defn- apply-validarg "Applies a validarg to a function result."
   [{:keys [inp varg validargs]}]
   (case varg
     :data (v-data inp)
@@ -115,7 +115,7 @@
       (v-is inp is-varg)
       (throw (Exception. (str "Validarg does not exist: " varg " in " validargs))))))
 
-(defn- eval-with-stack
+(defn- eval-with-stack "Evaluates a function using values from the stack."
   [{:keys [pop? car args stack]}]
   (let [arity (if (nil? args)
                 (arg-count car)
@@ -160,7 +160,7 @@
         vargres (apply-validarg {:inp result :varg validarg :validargs vargs})]
     [(parse-validarg-res vargres) (conj stack result)]))
 
-(defn- eval-elem
+(defn- eval-elem "Evaluates the first element of the coll."
   [{:keys [coll vargs stack]}]
   (let [car (first coll)
         arg (first stack)]
@@ -184,7 +184,7 @@
      :else ;; TODO broken
      [(drop 1 coll) (conj stack (arg car))])))
 
-(defn walk
+(defn walk "Walks its way through the list tree."
   ([{:keys [state tree validargs]}]
      (walk true :tree tree :validargs validargs :stack (conj (list) state)))
   
