@@ -63,6 +63,12 @@
   (testing "parse-validarg-stmt keyword with list"
     (is (= '(4 :b 5)
            (parse-validarg-stmt '(1 2 3 :a 4 :b 5) :a))))
+  (testing "parse-validarg-stmt keyword with nested list"
+    (is (= '(6)
+           (parse-validarg-stmt '(1 (:a 6)) :a))))
+  (testing "parse-validarg-res with chained validargs"
+    (is (= '(6 8)
+           (parse-validarg-res '(1 (:a 5 6 8)) [:a 1]))))
   )
 
 (deftest basic-test

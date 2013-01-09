@@ -1,4 +1,4 @@
-(defproject visuflow "0.1.0"
+(defproject visuflow "0.2.0"
   :description "VisuFlow flows your data."
   :url "http://github.com/zilti/visuflow"
   :license {:name "Eclipse Public License"

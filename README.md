@@ -7,7 +7,7 @@ A Clojure library designed to help you organize the order of your functions.
 ## Usage
 
 ```clojure
-[visuflow "0.1.0"]
+[visuflow "0.2.0"]
 ```
 
 ### Ingredients - a small overview...
@@ -23,14 +23,14 @@ Finally, you need a nested structure describing what you want to do.
 To start, do:
 ```clojure
 (use 'visuflow.core)
-(walk {:state 5 :tree '(... walking tree ...) :validargs {... validarg map ...})
+(walk {:state 5 :tree (... walking tree ...) :validargs {... validarg map ...})
 ```
 
 ### The nested structure
 The nested structure describes how your data flows through your functions:
 Lists hold everything together:
 ```clojure
-'(first [:!f identity :true] ([println true]) ([println false]))
+(list first [:!f identity :true] ([println true]) ([println false]))
 ```
 If a list entry consists of more than one thing, you wrap them in a vector:
 ```clojure
@@ -86,22 +86,22 @@ The fork statement consists of three elements.
 #### Something to consider...
 The reader "steps" into nested lists, never to leave them again:
 ```clojure
-(walk {:state 1 :tree '(inc inc dec [:!f identity :<5] inc dec) :validargs {:<5 [[#(< % 5) 1]
-                                                                                 [#(>= % 5) 2]]}}) 
+(walk {:state 1 :tree (list inc inc dec [:!f identity :<5] inc dec) :validargs {:<5 [[#(< % 5) 1]
+                                                                                     [#(>= % 5) 2]]}}) 
 ;;=> 2 ;; Stack: (2 3 2 2 3 2 1)
 
-(walk {:state 1 :tree '(inc inc dec [:!f identity :<5] (inc) (dec)) :validargs {:<5 [[#(< % 5) 1]
-                                                                                     [#(>= % 5) 2]]}})
+(walk {:state 1 :tree (list inc inc dec [:!f identity :<5] (inc) (dec)) :validargs {:<5 [[#(< % 5) 1]
+                                                                                         [#(>= % 5) 2]]}})
 ;;=> 3 ;; Stack: (3 2 2 3 2 1)
 ```
 
 #### Validargs
-There are some built-in validargs:
-:data "if input is a value other than true, false, nil"
-:true "if input is true"
-:false "if input is false"
-:nil "if input is nil"
-:fnil "if input is false or nil"
+There are some built-in validargs:  
+:data "if input is a value other than true, false, nil"  
+:true "if input is true"  
+:false "if input is false"  
+:nil "if input is nil"  
+:fnil "if input is false or nil"  
 :is "A vector query like above with custom checkers."	
 
 Furthermore you can define your own in the validargs-map you have to supply at the beginning:
@@ -123,8 +123,19 @@ On the right side you have more options:
 If no map is found, the walker will look if the first element of the list is equal to the keyword.
 Don't forget: This is the only place where you can use maps! A map without fork will crash.  
 
-3. Chaining: You can chain numbers and keywords together in a sequence.
-e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo].  
+3. Chaining: You can chain numbers and keywords together in a sequence (like this: [map? [3 :foo]]).
+e.g. [3 :foo] means: Drop three and continue as in 2., with the exception that no more entries will be dropped. :foo is an implicit [1 :foo]. 
+
+##### Composing validargs
+You can also compose validargs. That is very simple and works the same way you would compose functions with clojure.core/comp:
+```clojure
+(comp validargs
+[[[map? 1]
+  [list? 2]]
+ [[#(> 5 %) {}]
+  [:else (list)]]])
+```
+This will return a new vector-list where, if the input number is smaller than 5 it will drop 1, else it will drop 2.
 
 ### More control - the flow :! colonbangs
 ```clojure
@@ -137,7 +148,7 @@ Note: When using the flow-:!-statements, nothing will get dropped from the tree,
 
 ## TODO List
 * Do something useful when the element is neiter a keyword, function, nor a list.
-* Check first element of list instead of only the map
+* Add a :!j cb to join in another flow tree.
 * -Something I forgot belongs here-
 
 ## License
