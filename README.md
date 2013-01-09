@@ -4,6 +4,21 @@ In functional programming, we decouple the data from the functionality.
 But why don't we decouple the data flow from the functions?  
 ...
 A Clojure library designed to help you organize the order of your functions.
+
+## Contents
+1. [Usage](#Usage)
+1.1. [Ingredients](#ingredients---a-small-overview)
+1.1. [The nested structure](#the-nested-structure)
+1.1. [Calling functions and keywords - The result stack](#calling-functions-and-keywords---the-result-stack)
+1.1.1. [The :!p keyword](#the-p-keyword)
+1.1. [Fork - If, the VisuFlow way](#fork---if-the-visuflow-way)
+1.1.1. [Something to consider...](#something-to-consider)
+1.1.1. [Validargs](#validargs)
+1.1.1.1. [Composing validargs](#composing-validargs)
+1.1.1. [More control - the flow :! colonbangs](#more-control---the-flow--colonbangs)
+1. [TODO List](#todo-list)
+1. [License](#License)
+
 ## Usage
 
 ```clojure
