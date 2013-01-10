@@ -17,7 +17,7 @@ A Clojure library designed to help you organize the order of your functions.
             1. [Composing validargs](#composing-validargs)  
         1. [More control - the flow :! colonbangs](#more-control---the-flow--colonbangs)  
 1. [TODO List](#todo-list)  
-1. [License](#License)  
+1. [License](#license)  
 
 ## Usage
 
@@ -150,7 +150,13 @@ You can also compose validargs. That is very simple and works the same way you w
  [[#(> 5 %) {}]
   [:else (list)]]])
 ```
-This will return a new vector-list where, if the input number is smaller than 5 it will drop 1, else it will drop 2.
+This will return a new vector-list where, if the input number is smaller than 5 it will drop 1, else it will drop 2.  
+The composition itself is by the way implemented in VisuFlow:
+```clojure
+(walk 
+{:tree (list [:!p wrap] finalize)
+ :stack {:res [] :vargs validargs}})
+```
 
 ### More control - the flow :! colonbangs
 ```clojure
