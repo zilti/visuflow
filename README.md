@@ -22,7 +22,7 @@ A Clojure library designed to help you organize the order of your functions.
 ## Usage
 
 ```clojure
-[visuflow "0.2.0"]
+[visuflow "0.2.1"]
 ```
 
 ### Ingredients - a small overview...
